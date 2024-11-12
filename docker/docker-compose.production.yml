@@ -1,0 +1,95 @@
+services:
+  db:
+    image: postgres:17
+    container_name: imageflow_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./data/minio:/data
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    command: server /data --console-address ":9001"
+    labels:
+      - 'traefik.enable=true'
+
+      # UI
+      - 'traefik.http.routers.minio_ui.rule=Host(`minio.localhost`)'
+      - 'traefik.http.services.minio_ui.loadbalancer.server.port=9001'
+      - 'traefik.http.routers.minio_ui.service=minio_ui'
+
+      # Edge
+      - 'traefik.http.routers.minio_edge.rule=Host(`minio.edge.localhost`)'
+      - 'traefik.http.services.minio_edge.loadbalancer.server.port=9000'
+      - 'traefik.http.routers.minio_edge.service=minio_edge'
+
+  api:
+    image: romainentrecodeurs/imageflow-api
+    container_name: imageflow_api
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      APP_URL: http://imageflow.localhost
+      MINIO_ENDPOINT: minio
+      MINIO_PUBLIC_URL: http://minio.edge.localhost
+      MINIO_PORT: 9000
+      MINIO_SSL: false
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public
+    restart: always
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.api.rule=Host(`api.localhost`)'
+      - 'traefik.http.services.api.loadbalancer.server.port=3000'
+      - 'traefik.http.routers.api.entrypoints=web'
+  web:
+    image: romainentrecodeurs/imageflow-web
+    container_name: imageflow_web
+    restart: always
+    environment:
+      VITE_API_URL: http://api.localhost/v1
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.web.rule=Host(`imageflow.localhost`)'
+      - 'traefik.http.services.web.loadbalancer.server.port=3001'
+      - 'traefik.http.routers.web.entrypoints=web'
+  redis:
+    image: redis:alpine
+    container_name: imageflow_redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    restart: always
+  reverse-proxy:
+    image: traefik:v3.2
+    container_name: imageflow_traefik
+    restart: always
+    command:
+      - '--api.insecure=true'
+      - '--log.level=DEBUG'
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      - '--entryPoints.web.address=:80'
+    ports:
+      - '80:80'
+      - '8080:8080'
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+
+volumes:
+  postgres_data:

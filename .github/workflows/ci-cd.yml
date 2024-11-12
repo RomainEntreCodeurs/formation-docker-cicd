@@ -4,7 +4,6 @@ on:
   push:
     branches: ["main"]
 
-
 jobs:
   build-and-test:
     name: Build and Test
@@ -63,6 +62,8 @@ jobs:
       - name: Build and push api
         uses: docker/build-push-action@v6
         with:
+          platforms: |
+            linux/arm64
           file: ./apps/api/Dockerfile
           push: true
           tags: romainentrecodeurs/imageflow-api:latest
@@ -70,6 +71,8 @@ jobs:
       - name: Build and push web
         uses: docker/build-push-action@v6
         with:
+          platforms: |
+            linux/arm64
           file: ./apps/web/Dockerfile
           push: true
           tags: romainentrecodeurs/imageflow-web:latest
