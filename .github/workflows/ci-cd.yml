@@ -63,13 +63,13 @@ jobs:
       - name: Build and push api
         uses: docker/build-push-action@v6
         with:
-          context: ./apps/api
+          file: ./apps/api/Dockerfile
           push: true
           tags: romainentrecodeurs/imageflow-api:latest
 
       - name: Build and push web
         uses: docker/build-push-action@v6
         with:
-          context: ./apps/web
+          file: ./apps/web/Dockerfile
           push: true
           tags: romainentrecodeurs/imageflow-web:latest
