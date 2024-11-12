@@ -65,4 +65,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: user/app:latest
+          tags: romainentrecodeurs/imageflow:latest
