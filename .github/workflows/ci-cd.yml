@@ -60,9 +60,16 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push api
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./apps/api
           push: true
-          tags: romainentrecodeurs/imageflow:latest
+          tags: romainentrecodeurs/imageflow-api:latest
+
+      - name: Build and push web
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/web
+          push: true
+          tags: romainentrecodeurs/imageflow-web:latest
