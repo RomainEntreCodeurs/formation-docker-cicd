@@ -1,1 +1,3 @@
-dsds
+interface test {
+
+}
