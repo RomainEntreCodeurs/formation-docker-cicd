@@ -43,6 +43,7 @@ jobs:
 
   deploy-docker-hub:
     name: deploy in docker hub
+    needs: build-and-test
     runs-on: ubuntu-latest
 
     steps:
@@ -59,3 +60,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: user/app:latest
